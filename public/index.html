@@ -3,18 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>หน้าเว็บลงทะเบียน m-1 13/10/67</title>
+    <title>หน้าเว็บเข้าสู่ระบบ</title>
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Inconsolata:wght@200..900&family=Jost:ital,wght@0,100..900;1,100..900&family=Signika:wght@300..700&display=swap"
-      rel="stylesheet"
-    />
+      rel="stylesheet" />
 
     <style>
-      /* CSS Styling */
       body {
         font-family: "Comfortaa", "Inconsolata", "Jost", "Signika", sans-serif;
         background-color: #f3f3f3;
@@ -77,22 +74,12 @@
       }
 
       input[type="text"],
-      input[type="email"],
       input[type="password"] {
         width: 100%;
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 5px;
         box-sizing: border-box;
-      }
-
-      select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        box-sizing: border-box;
-        margin-bottom: 15px;
       }
 
       button {
@@ -150,46 +137,30 @@
         height: 100%;
       }
     </style>
- </head>
-
+  </head>
 
   <body>
     <div class="container">
       <div class="left-section">
-        <h2>ลงทะเบียน m-1</h2>
-        <form id="registerForm">
+        <h2>Login System</h2>
+        <form id="loginForm">
           <div class="input-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" required />
-          </div>
-          <div class="input-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required />
+            <label for="username">Email</label>
+            <input type="text" id="email" name="email" required />
           </div>
           <div class="input-group">
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required />
           </div>
-          <div class="input-group">
-            <label for="role">Type</label>
-            <select id="role" name="role" required>
-              <option value="" disabled selected>Select</option>
-              <option value="Teacher">Teacher</option>
-              <option value="Student">Student</option>
-            </select>
-          </div>
-          <button type="submit">Confirm</button>
+          <button type="submit">Login</button>
         </form>
       </div>
 
       <div class="right-section">
-        <h2>เป็นสมาชิกแล้วใช่ไหม?</h2>
-        <p>ท่านสามารถเข้าสู่ระบบได้หากท่านทำการลงทะเบียนเป็นสมาชิกแล้ว</p>
-        <button type="button" onclick="window.location.href='login.html'">
-          Login
-        </button>
-        <button type="button" onclick="window.location.href='t-1.html'">
-          Go to t-1-v7.0.0
+        <h2>ยังไม่ได้เป็นสมาชิก?</h2>
+        <p>ท่านสามารถลงทะเบียนเพื่อเป็นสมาชิกใหม่ได้อย่างง่ายดาย</p>
+        <button type="button" onclick="window.location.href='register.html'">
+          Register
         </button>
       </div>
     </div>
@@ -214,51 +185,46 @@
       var db = firebase.firestore();
 
       document
-        .getElementById("registerForm")
+        .getElementById("loginForm")
         .addEventListener("submit", function (event) {
           event.preventDefault();
 
-          var username = document.getElementById("username").value;
           var email = document.getElementById("email").value;
           var password = document.getElementById("password").value;
-          var role = document.getElementById("role").value;
 
-          // ตรวจสอบว่าอีเมลนี้ถูกใช้แล้วหรือไม่
-          db.collection(role) // ใช้ค่าจาก role ในการเลือก collection
-            .where("Email", "==", email)
-            .get()
-            .then(function (querySnapshot) {
-              if (!querySnapshot.empty) {
-                // อีเมลซ้ำ
-                alert(
-                  "This email is already used for registration. Please use another email."
-                );
-              } else {
-                // อีเมลไม่ซ้ำ สามารถบันทึกข้อมูลได้
-                var docData = {
-                  Email: email,
-                  Password: password,
-                };
-                docData[
-                  role === "Teacher" ? "Username_teacher" : "Username_student"
-                ] = username;
+          // Function to check the collection and redirect
+          function checkCollectionAndRedirect(collection) {
+            return db
+              .collection(collection)
+              .where("Email", "==", email)
+              .get()
+              .then(function (querySnapshot) {
+                if (!querySnapshot.empty) {
+                  var userDoc = querySnapshot.docs[0]; // Consider only one result
+                  if (userDoc.data().Password === password) {
+                    // Redirect to studenthead.html for all users
+                    window.location.href =
+                      "studenthead.html?email=" + encodeURIComponent(email);
+                  } else {
+                    alert("Your password is incorrect.");
+                  }
+                  return true;
+                }
+                return false;
+              });
+          }
 
-                db.collection(role)
-                  .add(docData)
-                  .then(function (docRef) {
-                    alert(
-                      "Registration completed successfully! Your ID: " +
-                        docRef.id
-                    );
-                    console.log("Document written with ID: ", docRef.id);
-
-                    // รีเซ็ตฟอร์ม
-                    document.getElementById("registerForm").reset();
-                  })
-                  .catch(function (error) {
-                    console.error("Error adding document: ", error);
-                    alert("Error adding document: " + error.message);
-                  });
+          // Check both collections
+          checkCollectionAndRedirect("Teacher")
+            .then(function (foundInTeacher) {
+              if (!foundInTeacher) {
+                checkCollectionAndRedirect("Student").then(function (
+                  foundInStudent
+                ) {
+                  if (!foundInStudent) {
+                    alert("This email is not registered yet.");
+                  }
+                });
               }
             })
             .catch(function (error) {
